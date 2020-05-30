@@ -1,8 +1,6 @@
 const Discord = require("discord.js");
-// The MESSAGE event runs anytime a message is received
-// Note that due to the binding of client to every event, every event
-// goes `client, other, args` when this function is run.
-module.exports = async (client, message) => {
+
+module.exports = async (client, oldMessage, message) => {
     if (message.author === client.user) return;
     if (message.author.bot) return;
   
@@ -13,12 +11,7 @@ module.exports = async (client, message) => {
     // Get the user or member's permission level from the elevation
     const level = client.permlevel(message);  
   
-    // Auto Bans
-    if (message.channel.id === "668335508904214568" && message.author.id === "668335554710077446") {
-      var autoArgs = ["add", message.content.split(" ")[0].replace(/`/g, "")]; // Set up artificial args
-      message.content.replace(/\`/g, "").split(" | ").slice(1).forEach(arg => autoArgs.push(arg)); // Add reason to artificial args
-      client.commands.get("rbans").run(client, message, autoArgs, 2); // run rbans command artificially
-    };
+    const args = message.content.slice(settings.prefix.length).trim().split(/ +/g);
   
     // Censor
     if (message.guild && level < 2) {
@@ -75,70 +68,5 @@ module.exports = async (client, message) => {
         message.delete();
         m.delete({timeout: 8000});
       });
-    }
-  
-    // Here we separate our "command" name, and our "arguments" for the command.
-    // e.g. if we have the message "+say Is this the real life?" , we'll get the following:
-    // command = say
-    // args = ["Is", "this", "the", "real", "life?"]
-    let args = message.content.slice(settings.prefix.length).trim().split(/ +/g);
-    const command = args.shift().toLowerCase();
-
-    // Also good practice to ignore any message that does not start with our prefix,
-    // which is set in the configuration file.
-    if (message.content.indexOf(settings.prefix) !== 0) return;
-
-    // Check whether the command, or alias, exist in the collections defined
-    // in app.js.
-    const cmd = client.commands.get(command) || client.commands.get(client.aliases.get(command));
-  
-    // using this const varName = thing OR otherthign; is a pretty efficient
-    // and clean way to grab one of 2 values!
-    if (!cmd) return;
-  
-    // Some commands may not be useable in DMs. This check prevents those commands from running
-    // and return a friendly error message.
-    if (!message.guild && cmd.config.guildOnly)
-      return message.channel.send("This command is unavailable via private message. Please run this command in a guild.");
-  
-    if (message.guild && !message.guild.available && cmd.config.guildOnly)
-      return message.reply("There seems to be a Discord outage, preventing me from accessing your server. Please try again in a little bit.");
-    
-    
-    // Make sure the user has permission to use the command
-    if (level < client.levelCache[cmd.config.permLevel]) {
-      if (settings.systemNotice === "true") {
-        return message.channel.send(`You do not have permission to use this command.
-      Your permission level is ${level} (${client.config.permLevels.find(l => l.level === level).name})
-      This command requires level ${client.levelCache[cmd.config.permLevel]} (${cmd.config.permLevel})`).then(m => m.delete(8000));
-      } else {
-        return;
-      }
-    }
-  
-    // Create message flags (i.e. if message is "\command --flag custom value", the message flags would be {flag: "custom value"})
-    // ** NOTE: flags MUST be placed at the end of the message, as everything after the first flag is taken out of args and is only accessible in message.flags and message.content.
-    const flagPrefix = "\-\-"; // flag prefix (escaped)
-    message.flags = {};
-    let first, key;
-    let val = [];
-    for (var arg of args) {
-      if (arg.startsWith(flagPrefix)) {
-        if (key) message.flags[key] = !!val.length ? val.join(" ") : null; // If there is a key, store key-value pair
-        if (!first) first = arg; // Set the first key so we know where args end and flags begin
-        key = arg.slice(flagPrefix.length).toLowerCase(); // Set key
-        val = []; // Reset value array
-      } else {
-        val.push(arg); // Add current argument to value array
-      }
-    }
-    if (key) message.flags[key] = !!val.length ? val.join(" ") : null; // If there is a key, store the FINAL key-value pair
-    if (first) args = args.slice(0, args.indexOf(first)); // Remove all flag data from args
-  
-    try {
-        cmd.run(client, message, args, level);
-    } catch (err) {
-        message.react("❌").catch(err => console.log(err.stack));
-        console.log(err.stack);
     }
 }

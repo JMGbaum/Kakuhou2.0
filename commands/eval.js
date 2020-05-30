@@ -29,5 +29,7 @@ exports.help = {
   name: "eval",
   category: "System",
   description: "Evaluates arbitrary javascript.",
-  usage: "eval [...code]"
+  usage: "eval [...code]",
+  flags: {}
 };
+
