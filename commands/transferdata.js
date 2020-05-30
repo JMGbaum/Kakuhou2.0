@@ -4,13 +4,14 @@ exports.run = async (client, message, args, level) => {
   
   // Mutes
   const mutes = old_db.prepare("SELECT * FROM muteLogs").all().map(m => {
-    if (!m.length || m.length.toLowerCase().startsWith("indef")) m.unmute = null;
-    else m.unmute = old_db.prepare(`SELECT time FROM mutes WHERE userId = '${m.userID}'`).get().time;
+    const row = old_db.prepare(`SELECT time FROM mutes WHERE userId = '${m.userID}'`).get();
+    m.unmute = (!m.length || m.length.toLowerCase().startsWith("indef")) && row ? row.time : null;
+    m.guildID = row ? row.guildID : null;
     m.time = new Date(m.date).getTime();
     return m
   });
   mutes.forEach(row => {
-    db.prepare("INSERT INTO mutes (userID, moderator, reason, time, unmute) VALUES (?, ?, ?, ?, ?)").run(row.userID, row.moderator, row.reason, row.time, row.unmute);
+    db.prepare("INSERT INTO mutes (userID, guildID, moderator, reason, time, unmute) VALUES (?, ?, ?, ?, ?, ?)").run(row.userID, row.guildID, row.moderator, row.reason, row.time, row.unmute);
   });
   
   // Tempbans
