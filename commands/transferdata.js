@@ -15,7 +15,7 @@ exports.run = async (client, message, args, level) => {
   });
   
   // Tempbans
-  const bans = old_db.prepare("SELECT * FROM bans");
+  const bans = old_db.prepare("SELECT * FROM bans").all();
   bans.forEach(row => db.prepare("INSERT INTO tempbans (userID, guildID, unban) VALUES (@userId, @guildId, @time)").run(row));
   
   // Rbans
