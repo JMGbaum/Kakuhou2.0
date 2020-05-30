@@ -57,5 +57,5 @@ typings/
 # dotenv environment variables file
 .env
 
-data/database.sqlite
-data/database.db
+# data/database.sqlite
+# data/database.db
