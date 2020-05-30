@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 exports.run = async (client, message, args, level) => {
   try {
-    const member = message.mentions.members.first() || await message.guild.members.fetch(args[0]) || await message.guild.members.fetch(message.content.split("<@")[1].split(">")[0].replace(/[^\d]/g, ""));
+    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content));
     const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
     const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
     const length = client.parseTime(message.flags["time"]);

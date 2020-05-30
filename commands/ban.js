@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 exports.run = async (client, message, args, level) => {
-  const member = parseInt(args[0]) ? await client.users.fetch(args[0]) : message.mentions.members.first() || await message.guild.members.fetch(message.content.split("<@")[1].split(">")[0].replace(/[^\d]/g, ""));
+  const member = parseInt(args[0]) ? await client.users.fetch(args[0]).catch(err => console.log(err)) : message.mentions.members.first() || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)) || await client.users.fetch(/(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content).replace(/[^\d]/g, "")).catch(err => console.log(err));
   // Return if target is not supplied
   if (!member) return message.channel.send("Who are you trying to ban, " + message.author + "?").then(m => m.delete({timeout: 10000}));
   // Make sure the person running the command has a role higher than the target
