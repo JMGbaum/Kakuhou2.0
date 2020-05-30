@@ -2,10 +2,10 @@ const db = require("better-sqlite3")("./data/database.db", {verbose: console.log
 const Discord = require("discord.js");
 
 module.exports = async client => {
-  
+  /*
   // Send overdue reminders
   db.prepare("SELECT * FROM robloxbans WHERE unban > ? AND reminderSent = 0").all(Date.now()).forEach(row => {
-    client.channels.fetch("586418676509573131").send(`${client.users.fetch(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
+    client.channels.cache.get("586418676509573131").send(`${client.users.fetch(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
     db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${row.banID}`).run();
   })
   
@@ -63,8 +63,9 @@ module.exports = async client => {
   
   // Handle overdue tempmutes
   db.prepare(`SELECT * FROM mutes WHERE unmute > ${Date.now()}`).all().forEach(async row => {
-    const settings = await client.getGuildSettings(row.guildID);
+    const settings = await client.getGuildSettings(row.guildID).catch(err => {}) || client.config.defaultSettings;
     const guild = client.guilds.cache.get(row.guildID);
+    if (!guild) return;
     const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase === c.name.toLowerCase());
     const member = guild.members.cache.get(row.userID);
     const user = await client.users.fetch(row.userID);
@@ -86,8 +87,9 @@ module.exports = async client => {
   // Load tempmute timeouts
   db.prepare("SELECT * FROM mutes WHERE unmute != NULL").all().forEach(row => {
     client.timeouts.mutes[row.muteID] = setTimeout(async () => {
-      const settings = await client.getGuildSettings(row.guildID);
+      const settings = await client.getGuildSettings(row.guildID) || client.config.defaultSettings;
       const guild = client.guilds.cache.get(row.guildID);
+      if (guild) return;
       const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase === c.name.toLowerCase());
       const member = guild.members.cache.get(row.userID);
       const user = await client.users.fetch(row.userID);
@@ -120,5 +122,6 @@ module.exports = async client => {
     url: "https://www.twitch.tv/SushiWalrus",
     type: "STREAMING"
   });
+  */
   
 }
