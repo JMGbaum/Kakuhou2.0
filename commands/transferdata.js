@@ -32,7 +32,7 @@ exports.run = async (client, message, args, level) => {
     return obj
   })
   rbans.forEach(row => db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (@robloxID, @username, @moderator, @reason, @time, @unban, @reminderSent)").run(row));
-  
+  message.reply("Done.");
 }
 
 exports.config = {
