@@ -87,9 +87,9 @@ const readdir = promisify(require("fs").readdir);
 // Create reports table if it doesn't already exist
 try{
     db.prepare("CREATE TABLE IF NOT EXISTS reports (reportID INTEGER PRIMARY KEY, reportedUsername TEXT, updatedUsername TEXT, robloxID TEXT, reason TEXT, reporterID TEXT, time INTEGER)").run();
-    db.prepare("CREATE TABLE IF NOT EXISTS robloxbans (banID INTEGER PRIMARY KEY, robloxID TEXT, username TEXT, moderator TEXT, reason TEXT, time INTEGER, unban INTEGER, reminderSent INTEGER)").run();
-    db.prepare("CREATE TABLE IF NOT EXISTS verify (discordID TEXT, robloxID TEXT, username TEXT, inGroup INTEGER, active INTEGER)").run();
-    db.prepare("CREATE TABLE IF NOT EXISTS bancount (robloxID TEXT, count INTEGER, latest INTEGER)").run();
+    db.prepare("CREATE TABLE IF NOT EXISTS robloxbans (banID INTEGER PRIMARY KEY, robloxID TEXT UNIQUE, username TEXT, moderator TEXT, reason TEXT, time INTEGER, unban INTEGER, reminderSent INTEGER)").run();
+    db.prepare("CREATE TABLE IF NOT EXISTS verify (discordID TEXT, robloxID TEXT UNIQUE, username TEXT, inGroup INTEGER, active INTEGER)").run();
+    db.prepare("CREATE TABLE IF NOT EXISTS bancount (robloxID TEXT UNIQUE, count INTEGER, latest INTEGER)").run();
     db.prepare("CREATE TABLE IF NOT EXISTS mutes (muteID INTEGER PRIMARY KEY, userID TEXT, guildID TEXT, moderator TEXT, reason TEXT, time INTEGER, unmute INTEGER)").run();
     db.prepare("CREATE TABLE IF NOT EXISTS tempbans (banID INTEGER PRIMARY KEY, userID TEXT, guildID TEXT, unban INTEGER)").run();
 } catch(err) {

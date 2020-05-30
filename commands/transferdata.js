@@ -1,7 +1,6 @@
 const old_db = require("better-sqlite3")("./data/database.sqlite", {verbose: console.log});
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 exports.run = async (client, message, args, level) => {
-  
   // Mutes
   const mutes = old_db.prepare("SELECT * FROM muteLogs").all().map(m => {
     const row = old_db.prepare(`SELECT time FROM mutes WHERE userId = '${m.userID}'`).get();
@@ -15,7 +14,7 @@ exports.run = async (client, message, args, level) => {
   });
   
   // Tempbans
-  const bans = old_db.prepare("SELECT * FROM bans");
+  const bans = old_db.prepare("SELECT * FROM bans").all();
   bans.forEach(row => db.prepare("INSERT INTO tempbans (userID, guildID, unban) VALUES (@userId, @guildId, @time)").run(row));
   
   // Rbans
@@ -31,8 +30,12 @@ exports.run = async (client, message, args, level) => {
     obj.reminderSent = reminder ? reminder.reminderSent : 0;
     return obj
   })
-  rbans.forEach(row => db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (@robloxID, @username, @moderator, @reason, @time, @unban, @reminderSent)").run(row));
-  
+  rbans.forEach(row => {
+    try {
+      db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (@robloxID, @username, @moderator, @reason, @time, @unban, @reminderSent)").run(row)
+    } catch (err) {}
+  });
+  message.reply("Done.");
 }
 
 exports.config = {
