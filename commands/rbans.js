@@ -15,6 +15,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
           .sort(client.sortFunction); // Sort alphabetically
       if (users.length > 0) message.channel.send(users.slice(0, 49).join("\n"))
       else {
+        message.reply("There are no overdue rbans.");
         // Clear the rban reminders channel because there are no overdue bans
         const reminderChannel = await client.channels.fetch("586418676509573131");
         const reminders = await reminderChannel.messages.fetch({limit: 100});

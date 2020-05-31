@@ -22,7 +22,7 @@ module.exports = async (client, message) => {
   
     // Censor
     if (message.guild && level < 2) {
-      var censored = message.settings.censors.some(w => client.unemojify(message.content).replace(/[^a-z]/g, "").includes(w.toLowerCase().replace(/[^a-z]/g, "")));
+      var censored = message.settings.censors.some(w => client.unemojify(message.content).replace(/[^a-z]/gi, "").includes(w.replace(/[^a-z]/gi, "")));
       var word = message.settings.censors.find(w => client.unemojify(message.content).replace(/[^a-z]/gi, "").includes(w.replace(/[^a-z]/gi, "")));
       var wl = message.settings.whitelist.find(w => client.unemojify(message.content).replace(/[^a-z]/gi, "").includes(w.replace(/[^a-z]/gi, "")));
       var exactCensor = message.settings.exactCensors.find(c => client.unemojify(message.content).replace(/[^a-z\s]/gi, "").replace(/\s+/gi, " ").includes(c));
