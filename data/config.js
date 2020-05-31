@@ -12,7 +12,7 @@ const config = {
   // DO NOT LEAVE ANY OF THESE BLANK, AS YOU WILL NOT BE ABLE TO UPDATE THEM
   // VIA COMMANDS IN THE GUILD.
   defaultSettings : {
-      prefix: ";",
+      prefix: "\\",
       modLogChannel: "logs",
       modRole: "Staff",
       adminRole: "Administrative Power",

@@ -49,7 +49,7 @@ module.exports = (client) => {
     }
 
     client.unemojify = (string) => {
-        return string.replace(/🇦/g, "a").replace(/🇧/g, "b").replace(/🅱/g, "b").replace(/🇨/g, "c").replace(/🇩/g, "d").replace(/🇪/g, "e").replace(/🇫/g, "f").replace(/🇬/g, "g").replace(/🇭/g, "h").replace(/🇮/g, "i").replace(/🇯/g, "j").replace(/🇰/g, "k").replace(/🇱/g, "l").replace(/🇲/g, "m").replace(/🇳/g, "n").replace(/🇴/g, "o").replace(/🇵/g, "p").replace(/🇶/g, "q").replace(/🇷/g, "r").replace(/🇸/g, "s").replace(/🇹/g, "t").replace(/🇺/g, "u").replace(/🇻/g, "v").replace(/🇼/g, "w").replace(/🇽/g, "x").replace(/🇾/g, "y").replace(/🇿/g, "z").replace(/@/g, "a").replace(/$/g, "s").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/0/g, "o").replace(/!/g, "i").replace(/[\u00C0-\u00C5\u00E0-\u00E5]/g, "a").replace(/[\u00C8-\u00CB\u00E8-\u00EB]/g, "e").replace(/[\u00CC-\u00CF\u00EC-\u00EF]/g, "i").replace(/[\u00F1\u00D1]/g, "n").replace(/[\u00D2-\u00D6\u00D8\u00F2-\u00F6\u00F8]/g, "o").replace(/[\u00D9-\u00DC\u00F9-\u00FC]/g, "u");
+        return string.replace(/🇦/g, "a").replace(/🇧/g, "b").replace(/🅱/g, "b").replace(/🇨/g, "c").replace(/🇩/g, "d").replace(/🇪/g, "e").replace(/🇫/g, "f").replace(/🇬/g, "g").replace(/🇭/g, "h").replace(/🇮/g, "i").replace(/🇯/g, "j").replace(/🇰/g, "k").replace(/🇱/g, "l").replace(/🇲/g, "m").replace(/🇳/g, "n").replace(/🇴/g, "o").replace(/🇵/g, "p").replace(/🇶/g, "q").replace(/🇷/g, "r").replace(/🇸/g, "s").replace(/🇹/g, "t").replace(/🇺/g, "u").replace(/🇻/g, "v").replace(/🇼/g, "w").replace(/🇽/g, "x").replace(/🇾/g, "y").replace(/🇿/g, "z").replace(/\@/g, "a").replace(/\$/g, "s").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/0/g, "o").replace(/\!/g, "i").replace(/[\u00C0-\u00C5\u00E0-\u00E5]/g, "a").replace(/[\u00C8-\u00CB\u00E8-\u00EB]/g, "e").replace(/[\u00CC-\u00CF\u00EC-\u00EF]/g, "i").replace(/[\u00F1\u00D1]/g, "n").replace(/[\u00D2-\u00D6\u00D8\u00F2-\u00F6\u00F8]/g, "o").replace(/[\u00D9-\u00DC\u00F9-\u00FC]/g, "u");
     };
   
   
@@ -319,7 +319,6 @@ module.exports = (client) => {
   client.filterCollection = (collection, bool) => {
     const filtered = new Map();
     collection.forEach((val, key, map) => {
-      console.log(key)
       if (!!bool(val)) filtered.set(key, val);
     });
     return filtered;

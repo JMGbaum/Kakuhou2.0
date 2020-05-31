@@ -1,11 +1,13 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 exports.run = async (client, message, args, level) => {
-  const member = parseInt(args[0]) ? await client.users.fetch(args[0]).catch(err => console.log(err)) : message.mentions.members.first() || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)) || await client.users.fetch(/(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content).replace(/[^\d]/g, "")).catch(err => console.log(err));
+  let member = parseInt(args[0]) ? await client.users.fetch(args[0]).catch(err => console.log(err)) : message.mentions.members.first() || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)) || /(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content) ? await client.users.fetch(/(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content)[0].replace(/[^\d]/g, "")).catch(err => console.log(err)) : null;
   // Return if target is not supplied
   if (!member) return message.channel.send("Who are you trying to ban, " + message.author + "?").then(m => m.delete({timeout: 10000}));
+  // Try to get the member object
+  if (message.guild.members.cache.get(member.id)) member = message.guild.members.cache.get(member.id);
   // Make sure the person running the command has a role higher than the target
-  if (message.guild.members.cache.get(member.id) && message.member.roles.highest.position <= member.roles.highest.position) return message.reply("You are not allowed to ban this user.");
+  if (message.guild.members.cache.get(member.id) && message.member.roles.highest.rawPosition <= message.guild.members.cache.get(member.id).roles.highest.rawPosition) return message.reply("You are not allowed to ban this user.");
   
   const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
   let ban = await (async () => {
@@ -16,7 +18,7 @@ exports.run = async (client, message, args, level) => {
   // Return if member is already banned
   if (!!ban) return message.reply("That user is already banned!");
   // Make sure the member is bannable
-  if (!member.bannable && message.guild.members.cache.get(member.id)) return message.reply("I am unable to ban that user. Check to make sure my highest role is higher than their highest role or you can try banning them manually.");
+  if (message.guild.members.cache.get(member.id) && !member.bannable) return message.reply("I am unable to ban that user. Check to make sure my highest role is higher than their highest role or you can try banning them manually.");
   // Return if there is no reason
   if (!args[1]) return message.reply("you must include a reason to ban a user. Please try again.");
   

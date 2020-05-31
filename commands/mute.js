@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 exports.run = async (client, message, args, level) => {
   try {
-    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content));
+    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]);
     const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
     const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
     const length = client.parseTime(message.flags["time"]);
@@ -11,7 +11,7 @@ exports.run = async (client, message, args, level) => {
     // Return if user not found
     if (!member) return message.reply("I was not able to find that user!").then(m => m.delete({timeout: 10000}));
     // Return if user already muted
-    else if (muted) return message.channel.send("This member is already muted, " + message.author);
+    else if (muted) return message.reply("This member is already muted.");
     // Return if no reason supplied
     else if (!args[1]) return message.reply("You need to include a reason.");
     else {
@@ -51,7 +51,7 @@ exports.run = async (client, message, args, level) => {
       const info = db.prepare("INSERT INTO mutes (userID, guildID, moderator, reason, time, unmute) VALUES (?, ?, ?, ?, ?, ?)").run(member.id, message.guild.id, message.author.id, args.slice(1).join(" "), Date.now(), unmute);
       // Add timeout
       if (!!length) client.timeouts.mutes[info.lastInsertRowid] = setTimeout(async () => {
-        const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase === c.name.toLowerCase());
+        const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
         const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
         const embed = new Discord.MessageEmbed()
             .setTitle("Unmute (Auto)")

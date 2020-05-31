@@ -27,17 +27,17 @@ exports.run = (client, message, args, level) => {
       }
       output += `${message.settings.prefix}${c.help.name}${" ".repeat(longest - c.help.name.length)} :: ${c.help.description}\n`;
     });
-    try {
-      message.author.send(output, {
-        code: "asciidoc",
-        split: {
-          char: "\u200b"
-        }
-      });
-      message.reply("check your messages!");
-    } catch (err) {
-      message.reply("I was unable to send you a private message. Please check your direct message settings.");
-    }
+    
+    let response = "Check your messages!"
+    message.author.send(output, {
+      code: "asciidoc",
+      split: {
+        char: "\u200b"
+      }
+    }).catch(err => {
+      response = "I was unable to send you a private message. Please check your direct message settings.";
+    });
+    message.reply(response);
   } else {
     // Show individual command's help.
     let command = args[0];

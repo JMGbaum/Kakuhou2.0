@@ -1,12 +1,12 @@
 const Discord = require("discord.js");
-const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
+const db = require("better-sqlite3")("./data/database.db");
 
 module.exports = async (client, member) => {
   // Load the guild's settings
-  const settings = client.getGuildSettings(member.guild);
+  const settings = await client.getGuildSettings(member.guild);
 
   // Remove any tempbans from database (if they are in the guild, they aren't banned)
-  db.prepare(`DELETE FROM bans WHERE userID = '${member.id}' AND guildID = '${member.guild.id}'`).run();
+  db.prepare(`DELETE FROM tempbans WHERE userID = '${member.id}' AND guildID = '${member.guild.id}'`).run();
   
   // Mute the user if they are still muted
   const muted = db.prepare("SELECT * FROM mutes WHERE userID = ? AND guildID = ?").get(member.id, member.guild.id);

@@ -41,7 +41,6 @@ exports.run = async (client, message, args, level) => {
     
     // End command if only "proof" given was a roblox link
     const urls = Array.from(reason.content.matchAll(/https?\:\/\/\w[^\s]+\.[^\s]+/g)).map(m => m[0]);
-    console.log(urls)
     if (urls.length > 0 && urls.every(url => url.toLowerCase().includes("roblox.com"))) {
       return reason.channel.send("Roblox links do not count as proof. You must provide proof in either image, gif, or video format. Command terminated.");
     }

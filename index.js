@@ -162,4 +162,5 @@ const init = async () => {
 
 init();
 
-client.on('debug', console.log);
+// Debug event
+// client.on('debug', console.log);
