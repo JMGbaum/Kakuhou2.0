@@ -214,11 +214,11 @@ module.exports = (client) => {
   /* GET GUILD SETTINGS */
   client.getGuildSettings = async (guild) => {
     const defaults = client.config.defaultSettings;
-    const overrides = await keyv.get(guild.id).catch(err => {}) || {};
+    const overrides = guild ? await keyv.get(guild.id).catch(err => {}) : {};
     const settings = {};
     for (const key in defaults) {
       // Add missing keys, apply guild-specific settings
-      settings[key] = overrides[key] || defaults[key];
+      settings[key] = overrides ? overrides[key] || defaults[key] : defaults[key];
     }
     return settings;
   }

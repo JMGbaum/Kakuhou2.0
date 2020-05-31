@@ -2,14 +2,14 @@ const db = require("better-sqlite3")("./data/database.db", {verbose: console.log
 const Discord = require("discord.js");
 
 module.exports = async client => {
-  // Send overdue reminders
+  /*// Send overdue reminders
   db.prepare(`SELECT * FROM robloxbans WHERE unban < ${Date.now()} AND reminderSent = 0`).all().forEach(row => {
-    client.channels.cache.get("586418676509573131").send(`${client.users.fetch(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
+    client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
     db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${row.banID}`).run();
   });
   
   // Load rban timeouts
-  db.prepare("SELECT * FROM robloxbans WHERE unban != NULL AND reminderSent = 0").all().forEach(row => {
+  db.prepare("SELECT * FROM robloxbans WHERE unban IS NOT NULL AND reminderSent = 0").all().forEach(row => {
     client.rbanReminders[row.banID] = setTimeout(() => {
       client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
       db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${row.banID}`).run();
@@ -20,6 +20,7 @@ module.exports = async client => {
   db.prepare(`SELECT * FROM tempbans WHERE unban < ${Date.now()}`).all().forEach(async row => {
     const settings = await client.getGuildSettings(row.guildID);
     const guild = client.guilds.cache.get(row.guildID);
+    if (!guild) return;
     const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
     const user = await client.users.fetch(row.userID);
     const unbanEmbed = new Discord.MessageEmbed()
@@ -41,6 +42,7 @@ module.exports = async client => {
     client.timeouts.bans[row.banID] = setTimeout(async () => {
       const settings = await client.getGuildSettings(row.guildID);
       const guild = client.guilds.cache.get(row.guildID);
+      if (!guild) return;
       const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
       const user = await client.users.fetch(row.userID);
       const unbanEmbed = new Discord.MessageEmbed()
@@ -84,11 +86,11 @@ module.exports = async client => {
   });
   
   // Load tempmute timeouts
-  db.prepare("SELECT * FROM mutes WHERE unmute != NULL").all().forEach(row => {
+  db.prepare("SELECT * FROM mutes WHERE unmute IS NOT NULL").all().forEach(row => {
     client.timeouts.mutes[row.muteID] = setTimeout(async () => {
-      const settings = await client.getGuildSettings(row.guildID) || client.config.defaultSettings;
+      const settings = await client.getGuildSettings(client.guilds.cache.row.guildID) || client.config.defaultSettings;
       const guild = client.guilds.cache.get(row.guildID);
-      if (guild) return;
+      if (!guild) return;
       const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
       const member = guild.members.cache.get(row.userID);
       const user = await client.users.fetch(row.userID);
@@ -108,7 +110,7 @@ module.exports = async client => {
       // Send embed in log channel
       channel.send(embed);
     }, row.unmute - Date.now());
-  });
+  });*/
   
   // Here we have the bot ping itself every 5 minutes so it doesn't shut off
   const http = require("http");

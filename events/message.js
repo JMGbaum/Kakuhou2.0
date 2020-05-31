@@ -6,8 +6,8 @@ module.exports = async (client, message) => {
     if (message.author === client.user) return;
     if (message.author.bot) return;
   
-    // Grab the settings for this server from Enmap.
-    // If there is no guild, get default conf (DMs)
+    // Grab the settings for this server from the database.
+    // If there is no guild, get default config (DMs)
     const settings = message.settings = message.guild ? await client.getGuildSettings(message.guild) : client.config.defaultSettings;
     
     // Get the user or member's permission level from the elevation
@@ -137,6 +137,7 @@ module.exports = async (client, message) => {
   
     try {
         cmd.run(client, message, args, level);
+        console.log(`Ran ${cmd.help.name}`);
     } catch (err) {
         message.react("❌").catch(err => console.log(err.stack));
         console.log(err.stack);

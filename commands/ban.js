@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
+const CronJob = require("cron").CronJob;
 exports.run = async (client, message, args, level) => {
   let member = parseInt(args[0]) ? await client.users.fetch(args[0]).catch(err => console.log(err)) : message.mentions.members.first() || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)) || /(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content) ? await client.users.fetch(/(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content)[0].replace(/[^\d]/g, "")).catch(err => console.log(err)) : null;
   // Return if target is not supplied

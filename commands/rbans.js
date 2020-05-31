@@ -11,7 +11,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
     // List of users who have logged bans where it is past their unban time
     case "overdue": {
       // Grab usernames of overdue bans
-      const users = db.prepare(`SELECT username FROM robloxbans WHERE unban < ${Date.now()} OR reminderSent = 1`).all().map(row => row.username)
+      const users = db.prepare(`SELECT username FROM robloxbans WHERE unban < ${Date.now()}`).all().map(row => row.username)
           .sort(client.sortFunction); // Sort alphabetically
       if (users.length > 0) message.channel.send(users.slice(0, 49).join("\n"))
       else {
@@ -121,7 +121,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       if (!!unban) {
         // Set unban reminder timeout
         client.rbanReminders[info.lastInsertRowid] = setTimeout(() => {
-          client.channels.fetch("586418676509573131").send(`${client.users.fetch(message.author.id)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
+          client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(message.author.id)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
           db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${info.lastInsertRowid}`).run();
         }, unban);
         // Send confirmation message
@@ -144,7 +144,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       // Set new unban value or keep it the same
       let unban = message.flags["time"] ? (function() { if (message.flags["time"].toLowerCase().startsWith("no")) return null; else return client.parseTime(message.flags["time"]) + Date.now(); }).call() : oldLog.unban;
       // Moderator value
-      let moderator = message.author.id;
+      let moderator = message.flags["time"] ? message.author.id : oldLog.moderator;
       // Update database
       db.prepare("UPDATE robloxbans SET reason = ?, unban = ?, moderator = ?, reminderSent = ? WHERE banID = ?").run(reason, unban, moderator, 0, oldLog.banID);
       // Remove old timeout if there was one
@@ -152,7 +152,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       if (unban !== null && oldLog.unban > Date.now()) {
         // Set unban reminder timeout
         client.rbanReminders[oldLog.banID] = setTimeout(() => {
-          client.channels.fetch("586418676509573131").send(`${client.users.fetch(moderator)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
+          client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(moderator)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
           db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${oldLog.banID}`).run();
         }, unban - Date.now());
         // Send confirmation message

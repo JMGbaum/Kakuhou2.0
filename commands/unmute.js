@@ -30,7 +30,7 @@ exports.run = async (client, message, args, level) => {
   // Remove from database
   db.prepare(`DELETE FROM mutes WHERE userID = '${user.id}' AND guildID = '${message.guild.id}'`).run();
   // Remove from timeouts
-  if (entry.unmute !== null) {
+  if (entry && entry.unmute !== null) {
     clearTimeout(client.timeouts.mutes[entry.muteID]);
     delete client.timeouts.mutes[entry.muteID];
   }

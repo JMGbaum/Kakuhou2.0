@@ -160,7 +160,7 @@ exports.run = async (client, message, args, level) => {
                 // Set unban timeout
                 if (unban !== null) {
                     client.rbanReminders[info.lastInsertRowid] = setTimeout(() => {
-                        client.channels.cache.fetch("586418676509573131").send(`${client.users.cache.fetch(user.id)}, it's time to unban \`${row.reportedUsername}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.reportedUsername}\`.`)
+                        client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(user.id)}, it's time to unban \`${row.reportedUsername}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.reportedUsername}\`.`)
                         db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${info.lastInsertRowid}`).run();
                     }, unban);
                 };
@@ -242,7 +242,7 @@ exports.run = async (client, message, args, level) => {
                 // Set unban timeout
                 if (unban !== null) {
                     client.rbanReminders[info.lastInsertRowid] = setTimeout(() => {
-                        client.channels.cache.fetch("586418676509573131").send(`${client.users.cache.fetch(user.id)}, it's time to unban \`${row.reportedUsername}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.reportedUsername}\`.`)
+                        client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(user.id)}, it's time to unban \`${row.reportedUsername}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.reportedUsername}\`.`)
                         db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${info.lastInsertRowid}`).run();
                     }, unban);
                 };
