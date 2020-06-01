@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
+const CronJob = require("cron").CronJob;
 exports.run = async (client, message, args, level) => {
   try {
     const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]);
@@ -50,7 +51,7 @@ exports.run = async (client, message, args, level) => {
       // Add to database
       const info = db.prepare("INSERT INTO mutes (userID, guildID, moderator, reason, time, unmute) VALUES (?, ?, ?, ?, ?, ?)").run(member.id, message.guild.id, message.author.id, args.slice(1).join(" "), Date.now(), unmute);
       // Add timeout
-      if (!!length) client.timeouts.mutes[info.lastInsertRowid] = setTimeout(async () => {
+      if (!!length) client.timeouts.mutes[info.lastInsertRowid] = new CronJob(new Date(unmute), async () => {
         const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
         const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
         const embed = new Discord.MessageEmbed()
@@ -62,12 +63,12 @@ exports.run = async (client, message, args, level) => {
         // Unmute the user
         if (!!member && !!mutedRole) member.roles.remove(mutedRole);
         // Remove ban from database
-        db.prepare(`DELETE FROM mutes WHERE muteID = ${info.lastInsertRowid}`);
-        // Delete the timeout
-        delete client.timeouts.mutes[info.lastInsertRowId];
+        db.prepare(`DELETE FROM mutes WHERE muteID = ${info.lastInsertRowid}`).run();
         // Send embed in log channel
         channel.send(embed);
-      }, length);
+      });
+      // Start the cron job
+      client.timeouts.mutes[info.lastInsertRowid].start();
       // Confirmation reaction
       message.react("👍");
     }

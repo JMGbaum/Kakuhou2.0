@@ -19,7 +19,7 @@ exports.run = async (client, message, args, level) => {
   
     // Ask for reason & proof
     if (message.channel.type !== "dm") message.reply("Please check your DMs.");
-    let awaitMessage = await client.awaitMessage(message, "Please send a single message in this channel containing your reason and all of your proof. All of your proof MUST be links to external media, as attached files will not be saved and your report will not go through.", 300000, dmChannel);
+    let awaitMessage = await client.awaitMessage(message, "Please send a single message in this channel containing your reason and all of your proof (you don't need to include the username). All of your proof MUST be links to external media, as attached files will not be saved and your report will not go through.", 300000, dmChannel);
     if (!awaitMessage || awaitMessage.cancelled) return;
 
     const reason = awaitMessage.response;

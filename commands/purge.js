@@ -1,6 +1,6 @@
 exports.run = async (client, message, args, level) => {
   try {
-    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]) || null;
+    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || /(?<=\<\@)\d+(?=\>)/g.exec(message.content) ? message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]) : null;
     const amount =  parseInt(args[0]);
     if (!amount && !member) return message.reply("Must specify a user and amount, or just an amount, of messages to purge!");
     if (!amount) return message.reply("Must specify an amount to delete!");
@@ -17,6 +17,8 @@ exports.run = async (client, message, args, level) => {
       console.log(error.stack);
       message.reply("There was an error while running your command.");
     });
+    // Confirmation reaction
+    message.react("👍");
     
   } catch (err) {
     console.log(err.stack);
