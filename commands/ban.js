@@ -39,11 +39,11 @@ exports.run = async (client, message, args, level) => {
     // Remove all other tempbans
     db.prepare(`DELETE FROM tempbans WHERE userID = '${member.id}' AND guildID = '${message.guild.id}'`).run();
     // Remove timeout
-    if (!!client.timeouts.bans[member.id]) clearTimeout(client.timeouts.bans[member.id]);
+    if (!!client.timeouts.bans[member.id] && client.timeouts.bans[member.id].running) client.timeouts.bans[member.id].stop();
     // Add tempban
     const info = db.prepare("INSERT INTO tempbans (userID, guildID, unban) VALUES (?, ?, ?)").run(member.id, message.guild.id, time + Date.now());
     // Set timeout
-    client.timeouts.bans[info.lastInsertRowid] = setTimeout(() => {
+    client.timeouts.bans[info.lastInsertRowid] = new CronJob(new Date(time + Date.now()), () => {
       const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase === c.name.toLowerCase());
       const unbanEmbed = new Discord.MessageEmbed()
           .setTitle("Unban (Auto)")
@@ -54,12 +54,12 @@ exports.run = async (client, message, args, level) => {
       // Unban the user
       message.guild.members.unban(member, "Auto unban.");
       // Remove ban from database
-      db.prepare(`DELETE FROM tempbans WHERE banID = ${info.lastInsertRowid}`);
-      // Delete the timeout
-      delete client.timeouts.bans[info.lastInsertRowid];
+      db.prepare(`DELETE FROM tempbans WHERE banID = ${info.lastInsertRowid}`).run();
       // Send embed in log channel
       channel.send(unbanEmbed);
-    }, time);
+    });
+    // Start the cron job
+    client.timeouts.bans[info.lastInsertRowid].start()
   }
   else banEmbed.addField("Length:", "Indefinitely").addField("Reason:", args.slice(1).join(" "));
   message.guild.members.ban(member.id, {

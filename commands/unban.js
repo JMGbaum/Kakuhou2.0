@@ -24,6 +24,9 @@ exports.run = async (client, message, args, level) => {
   if (reason) embed.addField("Reason:", reason);
   // Unban the user
   message.guild.members.unban(ban.user.id, reason);
+  // Stop the cron job
+  const entry = db.prepare(`SELECT * FROM tempbans WHERE userID = '${ban.user.id}' AND guildID = '${message.guild.id}'`).run();
+  if (entry && client.timeouts.bans[entry.banID] && client.timeouts.bans[entry.banID].running) client.timeouts.bans[entry.banID].stop();
   // Remove from database
   db.prepare(`DELETE FROM tempbans WHERE userID = '${ban.user.id}' AND guildID = '${message.guild.id}'`).run();
   // Send embed

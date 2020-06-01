@@ -1,8 +1,9 @@
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 const Discord = require("discord.js");
+const CronJob = require("cron").CronJob;
 
 module.exports = async client => {
-  /*// Send overdue reminders
+  // Send overdue reminders
   db.prepare(`SELECT * FROM robloxbans WHERE unban < ${Date.now()} AND reminderSent = 0`).all().forEach(row => {
     client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
     db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${row.banID}`).run();
@@ -10,10 +11,12 @@ module.exports = async client => {
   
   // Load rban timeouts
   db.prepare("SELECT * FROM robloxbans WHERE unban IS NOT NULL AND reminderSent = 0").all().forEach(row => {
-    client.rbanReminders[row.banID] = setTimeout(() => {
+    client.rbanReminders[row.banID] = new CronJob(new Date(row.unban), () => {
       client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(row.moderator)}, it's time to unban \`${row.username}\` from Ro-Ghoul. Make sure to delete the banlog after unbanning them using \`\\rbans remove ${row.username}\`.`)
       db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${row.banID}`).run();
-    }, row.unban - Date.now())
+    })
+    // Start cron job
+    client.rbanReminders[row.banID].start();
   });
   
   // Handle overdue tempbans
@@ -39,7 +42,7 @@ module.exports = async client => {
   
   // Load tempban timeouts
   db.prepare("SELECT * FROM tempbans").all().forEach(row => {
-    client.timeouts.bans[row.banID] = setTimeout(async () => {
+    client.timeouts.bans[row.banID] = new CronJob(new Date(row.unban), async () => {
       const settings = await client.getGuildSettings(row.guildID);
       const guild = client.guilds.cache.get(row.guildID);
       if (!guild) return;
@@ -55,11 +58,11 @@ module.exports = async client => {
       guild.members.unban(user, "Auto unban.").catch(err => {});
       // Remove ban from database
       db.prepare(`DELETE FROM tempbans WHERE banID = ${row.banID}`).run();
-      // Delete the timeout
-      delete client.timeouts.bans[row.banID];
       // Send embed in log channel
       channel.send(unbanEmbed);
-    }, row.unban - Date.now());
+    });
+    // Start cron job
+    client.timeouts.bans[row.banID].start();
   });
   
   // Handle overdue tempmutes
@@ -86,8 +89,8 @@ module.exports = async client => {
   });
   
   // Load tempmute timeouts
-  db.prepare("SELECT * FROM mutes WHERE unmute IS NOT NULL").all().forEach(row => {
-    client.timeouts.mutes[row.muteID] = setTimeout(async () => {
+  db.prepare(`SELECT * FROM mutes WHERE unmute IS NOT NULL AND unmute > ${Date.now()}`).all().forEach(row => {
+    client.timeouts.mutes[row.muteID] = new CronJob(new Date(row.unmute), async () => {
       const settings = await client.getGuildSettings(client.guilds.cache.row.guildID) || client.config.defaultSettings;
       const guild = client.guilds.cache.get(row.guildID);
       if (!guild) return;
@@ -105,12 +108,12 @@ module.exports = async client => {
       if (!!member && !!mutedRole) member.roles.remove(mutedRole);
       // Remove ban from database
       db.prepare(`DELETE FROM mutes WHERE muteID = ${row.muteID}`).run();
-      // Delete the timeout
-      delete client.timeouts.mutes[row.muteID];
       // Send embed in log channel
       channel.send(embed);
-    }, row.unmute - Date.now());
-  });*/
+    });
+    // Start cron job
+    client.timeouts.mutes[row.muteID].start();
+  });
   
   // Here we have the bot ping itself every 5 minutes so it doesn't shut off
   const http = require("http");

@@ -1,6 +1,7 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 const fetch = require("node-fetch");
+const CronJob = require("cron").CronJob;
 exports.run = async (client, message, [action, user, ...reason], level) => {
   // End if the command is not performed in the Ro-Ghoul discord or bot testing server
   if (message.guild.id !== "439037987284844545" && message.guild.id !== "319978373755437057") return message.reply("This command can only be used in the official Ro-Ghoul discord.");
@@ -112,7 +113,6 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       const unban = client.parseTime(message.flags["time"]); // Amount of time to wait before sending unban reminder (added to Date.now() when inserted into the database)
       // Add database entry
       const info = db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)").run(JSON.stringify(robloxData.data[0].id), user, message.author.id, reason, Date.now(), !!unban ? unban + Date.now() : unban, 0);
-      console.log(info)
       // Add 1 to ban count
       const count = db.prepare(`SELECT count FROM bancount WHERE robloxID = '${robloxData.data[0].id}'`).get();
       if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${robloxData.data[0].id}'`).run(count.count + 1, Date.now());
@@ -120,10 +120,12 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       
       if (!!unban) {
         // Set unban reminder timeout
-        client.rbanReminders[info.lastInsertRowid] = setTimeout(() => {
+        client.rbanReminders[info.lastInsertRowid] = new CronJob(new Date(unban + Date.now()), () => {
           client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(message.author.id)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
           db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${info.lastInsertRowid}`).run();
-        }, unban);
+        });
+        // Start cron job
+        client.rbanReminders[info.lastInsertRowid].start();
         // Send confirmation message
         message.reply(`I will remind you to unban \`${user}\` in ${client.parseTimeMessage(unban)}.`);
       }
@@ -147,14 +149,16 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       let moderator = message.flags["time"] ? message.author.id : oldLog.moderator;
       // Update database
       db.prepare("UPDATE robloxbans SET reason = ?, unban = ?, moderator = ?, reminderSent = ? WHERE banID = ?").run(reason, unban, moderator, 0, oldLog.banID);
-      // Remove old timeout if there was one
-      if (client.rbanReminders[oldLog.banID]) clearTimeout(client.rbanReminders[oldLog.banID]);
+      // Stop old cron job if there was one
+      if (client.rbanReminders[oldLog.banID] && client.rbanReminders[oldLog.banID].running) client.rbanReminders[oldLog.banID].stop();
       if (unban !== null && oldLog.unban > Date.now()) {
         // Set unban reminder timeout
-        client.rbanReminders[oldLog.banID] = setTimeout(() => {
+        client.rbanReminders[oldLog.banID] = new CronJob(new Date(unban), () => {
           client.channels.cache.get("586418676509573131").send(`${client.users.cache.get(moderator)}, it's time to unban \`${user}\` from Ro-Ghoul. Make sure to delete the ban log after unbanning them using \`\\rbans remove ${user}\`.`)
           db.prepare(`UPDATE robloxbans SET reminderSent = 1 WHERE banID = ${oldLog.banID}`).run();
-        }, unban - Date.now());
+        });
+        // Start cron job
+        client.rbanReminders[oldLog.banID].start();
         // Send confirmation message
         message.reply(`I will remind you to unban \`${user}\` in ${client.parseTimeMessage(unban - Date.now())}.`);
       }
