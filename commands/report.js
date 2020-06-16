@@ -10,18 +10,27 @@ exports.run = async (client, message, args, level) => {
     // End command if specified user is not a valid roblox username
     if (!response.data[0]) return message.reply("Could not find a roblox user with that username. Please try again.");
     
+    // Check for delete flag
+    if (message.flags.delete) {
+      const info = db.prepare(`DELETE FROM reports WHERE reporterID = '${message.author.id}' AND robloxID = '${response.data[0].id}'`).run();
+      if (info.changes > 0) return message.reply("Report successfully deleted!")
+      else return message.reply("You have not submitted any reports for that user!");
+    }
+  
     // End command if specified user is already banned
     const banned = db.prepare(`SELECT COUNT(*) FROM robloxbans WHERE robloxID = '${response.data[0].id}'`).get();
     if (banned["COUNT(*)"] > 0) return (message.reply("That user is already banned."));
+  
+    // End command if a report by this Discord user has already been submitted for the specified Roblox user
+    if (db.prepare(`SELECT 1 FROM reports WHERE reporterID = '${message.author.id}' AND robloxID = '${response.data[0].id}'`).get()) return message.reply(`You have already submitted a report for this user. If you would like to submit a new one, please delete the old one first by running the command \`${message.settings.prefix}report ${args[0]} --delete\``);
   
     // Open DM channel with user
     const dmChannel = await message.author.createDM();
   
     // Ask for reason & proof
-    if (message.channel.type !== "dm") message.reply("Please check your DMs.");
-    let awaitMessage = await client.awaitMessage(message, "Please send a single message in this channel containing your reason and all of your proof (you don't need to include the username). All of your proof MUST be links to external media, as attached files will not be saved and your report will not go through.", 300000, dmChannel);
+    let awaitMessage = await client.awaitMessage(message, "Please send a single message in this channel containing your reason and all of your proof (you don't need to include the username). All of your proof MUST be in URL form, as attached files will not be saved and your report will not go through.", 300000, dmChannel);
     if (!awaitMessage || awaitMessage.cancelled) return;
-
+  
     const reason = awaitMessage.response;
     
     // End command if there are attachments
@@ -45,8 +54,8 @@ exports.run = async (client, message, args, level) => {
       return reason.channel.send("Roblox links do not count as proof. You must provide proof in either image, gif, or video format. Command terminated.");
     }
     
-    db.prepare("INSERT INTO reports (reportedUsername, updatedUsername, robloxID, reason, reporterID, time) VALUES (?, ?, ?, ?, ?, ?)").run([args[0], response.data[0].name, JSON.stringify(response.data[0].id), reason.content, message.author.id, Date.now()]);
-    reason.channel.send("Report submitted successfully!");
+    const insert = db.prepare("INSERT INTO reports (reportedUsername, updatedUsername, robloxID, reason, reporterID, time) VALUES (?, ?, ?, ?, ?, ?)").run([args[0], response.data[0].name, JSON.stringify(response.data[0].id), reason.content, message.author.id, Date.now()]);
+    reason.channel.send(`Report submitted successfully! Unique report ID: \`${insert.lastInsertRowid}\`.`);
 };
 
 exports.config = {
@@ -61,5 +70,10 @@ exports.help = {
   category: "Game",
   description: "Report a Roblox user.",
   usage: "report <Roblox username>",
-  flags: {}
+  flags: {
+    delete: {
+      "description": "Delete a report instead of submitting one.",
+      "value": "None (just include the flag)"
+    }
+  }
 };

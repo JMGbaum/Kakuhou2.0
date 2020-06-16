@@ -13,7 +13,7 @@ exports.run = async (client, message, args, level) => {
 exports.config = {
   enabled: true,
   guildOnly: false,
-  aliases: [],
+  aliases: ["rl"],
   permLevel: "Bot Support"
 }
 
