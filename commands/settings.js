@@ -66,9 +66,10 @@ exports.run = async (client, message, [action, key, ...value], level) => {
       // Make sure a value to remove is supplied
       if (value.length < 1) return message.reply("You need to specify the value you are trying to remove.");
       // Make sure the value exists
-      if (!settings[key][value.join(" ")]) return message.reply(`\`${value.join(" ")}\` is not a value of \`${key}\`.`)
+      const val = settings[key].findIndex(v => v === value.join(" "));
+      if (!val) return message.reply(`\`${value.join(" ")}\` is not a value of \`${key}\`.`)
       
-      settings[key].splice(settings[key].findIndex(v => v === value.join(" ")), 1);
+      settings[key].splice(val, 1);
       overrides[key] = settings[key];
       break;
     }

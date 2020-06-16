@@ -3,16 +3,17 @@ const db = require("better-sqlite3")("./data/database.db", {verbose: console.log
 const CronJob = require("cron").CronJob;
 exports.run = async (client, message, args, level) => {
   try {
-    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]);
-    const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
-    const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
-    const length = client.parseTime(message.flags["time"]);
-    const muted = !!member.roles.cache.find(r => r.id === mutedRole.id);
-    
+    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || (/(?<=\<\@)\d+(?=\>)/g.exec(message.content) && message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]));
     // Return if user not found
     if (!member) return message.reply("I was not able to find that user!").then(m => m.delete({timeout: 10000}));
+    
+    const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
+    const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
+    const length = client.parseTime(message.flags["time"] || message.flags["t"]);
+    const muted = !!member.roles.cache.find(r => r.id === mutedRole.id);
+    
     // Return if user already muted
-    else if (muted) return message.reply("This member is already muted.");
+    if (muted) return message.reply("This member is already muted.");
     // Return if no reason supplied
     else if (!args[1]) return message.reply("You need to include a reason.");
     else {
@@ -51,24 +52,26 @@ exports.run = async (client, message, args, level) => {
       // Add to database
       const info = db.prepare("INSERT INTO mutes (userID, guildID, moderator, reason, time, unmute) VALUES (?, ?, ?, ?, ?, ?)").run(member.id, message.guild.id, message.author.id, args.slice(1).join(" "), Date.now(), unmute);
       // Add timeout
-      if (!!length) client.timeouts.mutes[info.lastInsertRowid] = new CronJob(new Date(unmute), async () => {
-        const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
-        const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
-        const embed = new Discord.MessageEmbed()
-            .setTitle("Unmute (Auto)")
-            .setColor("00bbff")
-            .addField("User:", `${member.tag || member.user.tag}`)
-            .setTimestamp()
-            .setFooter(`User ID: ${member.id}`);
-        // Unmute the user
-        if (!!member && !!mutedRole) member.roles.remove(mutedRole);
-        // Remove ban from database
-        db.prepare(`DELETE FROM mutes WHERE muteID = ${info.lastInsertRowid}`).run();
-        // Send embed in log channel
-        channel.send(embed);
-      });
-      // Start the cron job
-      client.timeouts.mutes[info.lastInsertRowid].start();
+      if (!!length) {
+        client.timeouts.mutes[info.lastInsertRowid] = new CronJob(new Date(unmute), async () => {
+          const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
+          const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
+          const embed = new Discord.MessageEmbed()
+              .setTitle("Unmute (Auto)")
+              .setColor("00bbff")
+              .addField("User:", `${member.tag || member.user.tag}`)
+              .setTimestamp()
+              .setFooter(`User ID: ${member.id}`);
+          // Unmute the user
+          if (!!member && !!mutedRole) member.roles.remove(mutedRole);
+          // Remove ban from database
+          db.prepare(`DELETE FROM mutes WHERE muteID = ${info.lastInsertRowid}`).run();
+          // Send embed in log channel
+          channel.send(embed);
+        });
+        // Start the cron job
+        client.timeouts.mutes[info.lastInsertRowid].start();
+      }
       // Confirmation reaction
       message.react("👍");
     }

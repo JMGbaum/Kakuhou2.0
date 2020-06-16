@@ -5,6 +5,10 @@ const bodyParser = require("body-parser");
 const rateLimit = require("express-rate-limit");
 const sqlite3 = require("better-sqlite3");
 const db = sqlite3("./data/database.db", {verbose: console.log});
+const Keyv = require('keyv');
+const verificationCodes = new Keyv('sqlite://./data/database.db', {
+  table: 'verificationCodes'
+});
 
 // we've started you off with Express, 
 // but feel free to use whatever libs or frameworks you'd like through `package.json`.
@@ -47,13 +51,12 @@ function authorize(request, response, next) {
 };
 
 // Handle verification requests
-app.post("/verify", authorize, (request, response) => {
+app.post("/verify", authorize, async (request, response) => {
   if (request.body) {
-    if (client.verification[request.body.code]) return response.status(400).send("Code in use."); // If the code is already being used, return an error.
-    if (db.prepare(`SELECT count(*) FROM verify WHERE robloxID = '${request.body.userID}'`).get()["count(*)"] > 0) return response.status(400).send("User is already verified."); // If the user is already verified, return an error.
+    if (await verificationCodes.get(request.body.code)) return response.status(400).send("Code in use."); // If the code is already being used, return an error.
+    if (db.prepare(`SELECT 1 FROM verify WHERE robloxID = '${request.body.userID}'`).get()) return response.status(400).send("User is already verified."); // If the user is already verified, return an error.
     try {
-      client.verification = client.verification.filter(v => v.userID !== request.body.userID); // Remove other codes generated for the same user from the client.
-      client.verification[request.body.code] = {userID: request.body.userID, username: request.body.username, inGroup: request.body.inGroup}; // Store the info as an object to be read later when the user runs the 'verify' command.
+      await verificationCodes.set(request.body.code, {userID: request.body.userID, username: request.body.username, inGroup: request.body.inGroup}, 300000); // Store the info as an object to be read later when the user runs the 'verify' command. Data will expire after 5 minutes.
       response.sendStatus(200); // Respond with success
     } catch(err) {
       console.log(err.stack);
@@ -109,9 +112,6 @@ client.aliases = new Map();
 // Create active reports array
 client.activeReports = [];
 
-// Create active verification codes array
-client.verification = [];
-
 // Create unban timeout object
 client.rbanReminders = {};
 
@@ -120,6 +120,9 @@ client.timeouts = {
   mutes: {},
   bans: {}
 }
+
+// Create logs to store reasons
+client.logs = {};
 
 const init = async () => {
     // Read the commands directory
@@ -163,4 +166,4 @@ const init = async () => {
 init();
 
 // Debug event
-// client.on('debug', console.log);
+client.on('debug', console.log);

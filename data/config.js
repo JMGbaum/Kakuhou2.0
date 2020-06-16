@@ -13,14 +13,17 @@ const config = {
   // VIA COMMANDS IN THE GUILD.
   defaultSettings : {
       prefix: "\\",
-      modLogChannel: "logs",
+      actionLogChannel: "kakuhou-logs", // Channel in which to log Discord events (e.g. message deletions, updates, etc.)
+      modLogChannel: "logs", // Channel in which to log mod actions
       modRole: "Staff",
       adminRole: "Administrative Power",
+      verifiedRole: "Member",
+      groupRole: "Group Member",
       mutedRole: "Muted",
       exemptRoles:[],
-      censors:["nigg", "cunt", "fag", "nibba", "nibber", "nigword", "nlgg", "rape", "nigrer", "pedo", "pedofile", "pedophile", "peedophile", "nigah", "niga"],
-      exactCensors:[],
-      whitelist:["f again", "earrape", "ear rape"],
+      censors:["nigg", "cunt", "fag", "nibba", "nibber", "nigword", "nlgg", "nigrer", "pedofile", "pedophile", "peedophile", "nigah", "niga"],
+      exactCensors:["pedo", "rape", "raped", "rapist"],
+      whitelist:["f again"],
       systemNotice: "true", // This gives a notice when a user tries to run a command that they do not have permission to use.
       suggestionOutputChannel:"voted-suggestions",
       blacklistedURLs:["chng.it", "change.org", "pornhub.com", "xnxx.com", "kink.com", "youjizz.com", "8tube.xxx", "redtube.com", "brazzers.com", "chaturbate.com", "livejasmine.com"]

@@ -91,7 +91,7 @@ module.exports = async client => {
   // Load tempmute timeouts
   db.prepare(`SELECT * FROM mutes WHERE unmute IS NOT NULL AND unmute > ${Date.now()}`).all().forEach(row => {
     client.timeouts.mutes[row.muteID] = new CronJob(new Date(row.unmute), async () => {
-      const settings = await client.getGuildSettings(client.guilds.cache.row.guildID) || client.config.defaultSettings;
+      const settings = await client.getGuildSettings(client.guilds.cache.get(row.guildID)) || client.config.defaultSettings;
       const guild = client.guilds.cache.get(row.guildID);
       if (!guild) return;
       const channel = guild.channels.cache.find(c => settings.modLogChannel.toLowerCase() === c.name.toLowerCase());
