@@ -1,5 +1,6 @@
 const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
+const CronJob = require("cron").CronJob;
 exports.run = async (client, message, args, level) => {
   let member = parseInt(args[0]) ? await client.users.fetch(args[0]).catch(err => console.log(err)) : message.mentions.members.first() || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)) || /(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content) ? await client.users.fetch(/(?<=\<\@)[^\s]+(?=\>)/g.exec(message.content)[0].replace(/[^\d]/g, "")).catch(err => console.log(err)) : null;
   // Return if target is not supplied
@@ -13,7 +14,7 @@ exports.run = async (client, message, args, level) => {
   let ban = await (async () => {
     try { return await message.guild.fetchBan(member.id) } catch (err) { return false };
   }).call();
-  const time = client.parseTime(message.flags["time"]);
+  const time = client.parseTime(message.flags["time"] || message.flags["t"]);
 
   // Return if member is already banned
   if (!!ban) return message.reply("That user is already banned!");
@@ -32,17 +33,17 @@ exports.run = async (client, message, args, level) => {
 
   if (!!time) {
     banEmbed.addField("Length:", client.parseTimeMessage(time)).addField("Reason:", args.slice(1).join(" "));
-    try {
+    /*try {
       member.send("You were temporarily banned for " + client.parseTimeMessage(time) + "\n\nReason:\n*" + args.slice(1).join(" ") + "*").catch(err => {});
-    } catch (err) {} 
+    } catch (err) {} */
     // Remove all other tempbans
     db.prepare(`DELETE FROM tempbans WHERE userID = '${member.id}' AND guildID = '${message.guild.id}'`).run();
     // Remove timeout
-    if (!!client.timeouts.bans[member.id]) clearTimeout(client.timeouts.bans[member.id]);
+    if (!!client.timeouts.bans[member.id] && client.timeouts.bans[member.id].running) client.timeouts.bans[member.id].stop();
     // Add tempban
     const info = db.prepare("INSERT INTO tempbans (userID, guildID, unban) VALUES (?, ?, ?)").run(member.id, message.guild.id, time + Date.now());
     // Set timeout
-    client.timeouts.bans[info.lastInsertRowid] = setTimeout(() => {
+    client.timeouts.bans[info.lastInsertRowid] = new CronJob(new Date(time + Date.now()), () => {
       const channel = message.guild.channels.cache.find(c => message.settings.modLogChannel.toLowerCase === c.name.toLowerCase());
       const unbanEmbed = new Discord.MessageEmbed()
           .setTitle("Unban (Auto)")
@@ -53,17 +54,17 @@ exports.run = async (client, message, args, level) => {
       // Unban the user
       message.guild.members.unban(member, "Auto unban.");
       // Remove ban from database
-      db.prepare(`DELETE FROM tempbans WHERE banID = ${info.lastInsertRowid}`);
-      // Delete the timeout
-      delete client.timeouts.bans[info.lastInsertRowid];
+      db.prepare(`DELETE FROM tempbans WHERE banID = ${info.lastInsertRowid}`).run();
       // Send embed in log channel
       channel.send(unbanEmbed);
-    }, time);
+    });
+    // Start the cron job
+    client.timeouts.bans[info.lastInsertRowid].start()
   }
   else banEmbed.addField("Length:", "Indefinitely").addField("Reason:", args.slice(1).join(" "));
   message.guild.members.ban(member.id, {
     reason: args.slice(1).join(" "),
-    days: message.flags["delete"] && parseInt(message.flags["delete"]) && parseInt(message.flags["delete"]) <= 7 && parseInt(message.flags["delete"]) >= 0 ? parseInt(message.flags["delete"]) : 0
+    days: parseInt(message.flags["delete"] || message.flags["del"]) <= 7 && parseInt(message.flags["delete"] || message.flags["del"]) >= 0 ? parseInt(message.flags["delete"] || message.flags["del"]) : 0
   });
   banEmbed.setTimestamp();
   message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase()).send(banEmbed);

@@ -81,12 +81,14 @@ module.exports = (client) => {
   client.awaitMessage = async (message, prompt, timeout, channel = message.channel) => {
     const user = message.author;
     const timeString = client.parseTimeMessage(timeout);
-    
+    let sent = true;
     const sentMsg = await channel.send(`${user}, ${prompt} Say 'cancel' to cancel. This prompt will timeout automatically after ${timeString}.`)
         .catch(err => {
-            message.reply("your DMs must be enabled to use this command.");
-            return undefined;
+            if (channel.type === "dm") message.reply("your DMs must be enabled to use this command.");
+            sent = false;
         });
+    if (!sent) return undefined;
+    if (message.channel.type !== "dm" && channel.type === "dm") message.reply("Please check your DMs.");
     try {
       const response = await sentMsg.channel.awaitMessages(m => m.author.id === user.id, { max: 1, time: timeout, errors: ["time"] });
       let cancelled = false;
@@ -195,8 +197,10 @@ module.exports = (client) => {
         }
       });
       // Organize args into objects with a 'number' property and a 'modifier' property to easily parse arguments
-      args = args.map(a => {return {number: parseFloat(a.split(/[^\.\d]+/g)[0]), modifier: a.split(/[\d\.]+/g)[1].toLowerCase()[0]}});
+      try{ args = args.map(a => {return {number: parseFloat(a.split(/[^\.\d]+/g)[0]), modifier: a.split(/[\d\.]+/g)[1].toLowerCase()[0]}}); } catch(err) {console.log(err.stack)};
       let time = 0;
+      // If no modifiers, the message couldn't be parsed
+      if (!args[0] || !args[0].modifier) return undefined;
       // Add proper number of milliseconds to time based on modifier
       args.filter(a => a.modifier === "w").forEach(a => time += a.number * 3600000 * 24 * 7); // week
       args.filter(a => a.modifier === "d").forEach(a => time += a.number * 3600000 * 24); // day
@@ -214,11 +218,11 @@ module.exports = (client) => {
   /* GET GUILD SETTINGS */
   client.getGuildSettings = async (guild) => {
     const defaults = client.config.defaultSettings;
-    const overrides = await keyv.get(guild.id).catch(err => {}) || {};
+    const overrides = guild ? await keyv.get(guild.id).catch(err => {}) : {};
     const settings = {};
     for (const key in defaults) {
       // Add missing keys, apply guild-specific settings
-      settings[key] = overrides[key] || defaults[key];
+      settings[key] = overrides ? overrides[key] || defaults[key] : defaults[key];
     }
     return settings;
   }

@@ -2,7 +2,7 @@ const Discord = require("discord.js");
 const db = require("better-sqlite3")("./data/database.db", {verbose: console.log});
 
 exports.run = async (client, message, args, level) => {
-  const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]);
+  const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]) || (/(?<=\<\@)\d+(?=\>)/g.exec(message.content) && message.guild.members.cache.get(/(?<=\<\@)\d+(?=\>)/g.exec(message.content)[0]));
   const user = !!member ? member.user : await client.users.fetch(args[0]) || null;
   const mutedRole = message.guild.roles.cache.find(r => r.name.toLowerCase() === message.settings.mutedRole.toLowerCase());
   const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
@@ -30,10 +30,7 @@ exports.run = async (client, message, args, level) => {
   // Remove from database
   db.prepare(`DELETE FROM mutes WHERE userID = '${user.id}' AND guildID = '${message.guild.id}'`).run();
   // Remove from timeouts
-  if (entry.unmute !== null) {
-    clearTimeout(client.timeouts.mutes[entry.muteID]);
-    delete client.timeouts.mutes[entry.muteID];
-  }
+  if (entry && entry.unmute !== null && client.timeouts.mutes[entry.muteID] && client.timeouts.mutes[entry.muteID].running) client.timeouts.mutes[entry.muteID].stop();
   // Confirmation reaction
   message.react("👍");
   // Send embed in logs

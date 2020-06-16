@@ -7,7 +7,7 @@ exports.run = async (client, message, args, level) => {
   // Find log channel from guild settings
   const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
   // Make sure user is banned. If yes, grab ban info
-  const ban = await client.searchBans(message, args);
+  const ban = await client.searchBans(message, args) || await message.guild.fetchBan(args[0]).catch(err => {});
   // If the function doesn't return anything, it has already handled the error.
   if (!ban) return;
   // Grab reason if one is supplied
@@ -24,6 +24,9 @@ exports.run = async (client, message, args, level) => {
   if (reason) embed.addField("Reason:", reason);
   // Unban the user
   message.guild.members.unban(ban.user.id, reason);
+  // Stop the cron job
+  const entry = db.prepare(`SELECT * FROM tempbans WHERE userID = '${ban.user.id}' AND guildID = '${message.guild.id}'`).get();
+  if (entry && client.timeouts.bans[entry.banID] && client.timeouts.bans[entry.banID].running) client.timeouts.bans[entry.banID].stop();
   // Remove from database
   db.prepare(`DELETE FROM tempbans WHERE userID = '${ban.user.id}' AND guildID = '${message.guild.id}'`).run();
   // Send embed

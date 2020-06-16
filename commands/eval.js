@@ -12,7 +12,7 @@ exports.run = async (client, message, args, level) => { // eslint-disable-line n
     if (message.author.id !== "210902212874862593") return message.reply("You don't have enough permissions to use this command.");
     const evaled = eval(code);
     const clean = await client.clean(client, evaled);
-    message.channel.send(`\`\`\`js\n${clean}\n\`\`\``);
+    if (!message.flags.suppress) message.channel.send(`\`\`\`js\n${clean}\n\`\`\``);
   } catch (err) {
     message.channel.send(`\`ERROR\` \`\`\`xl\n${await client.clean(client, err)}\n\`\`\``);
   }
@@ -30,6 +30,11 @@ exports.help = {
   category: "System",
   description: "Evaluates arbitrary javascript.",
   usage: "eval [...code]",
-  flags: {}
+  flags: {
+    suppress: {
+      description: "If included, the output will not be displayed.",
+      value: "None"
+    }
+  }
 };
 
