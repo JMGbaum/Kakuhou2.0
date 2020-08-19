@@ -106,6 +106,8 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       const unban = client.parseTime(message.flags["time"]); // Amount of time to wait before sending unban reminder (added to Date.now() when inserted into the database)
       // Add database entry
       const info = db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)").run(JSON.stringify(robloxData.Id), user, message.author.id, reason, Date.now(), !!unban ? unban + Date.now() : unban, 0);
+      // Delete any reports for the user
+      db.prepare(`DELETE FROM reports WHERE robloxID = '${robloxData.Id}'`).run();
       // Add 1 to ban count
       const count = db.prepare(`SELECT count FROM bancount WHERE robloxID = '${robloxData.Id}'`).get();
       if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${robloxData.Id}'`).run(count.count + 1, Date.now());
