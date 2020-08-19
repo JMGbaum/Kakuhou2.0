@@ -44,17 +44,10 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
   if (!user) return message.reply("You either forgot to specify a user, or you supplied an invalid action.");
   
   // Roblox API request for user data
-  const robloxData = await fetch(
-    "https://users.roblox.com/v1/usernames/users",
-    {
-      body: JSON.stringify({ usernames: [user], excludeBannedUsers: false }),
-      method: "post",
-      headers: { "Content-Type": "application/json" }
-    }
-  ).then(res => res.json());
+  const robloxData = await fetch(`https://api.roblox.com/users/get-by-username?username=${encodeURI(user)}`).then(res => res.json());
   
   // Check if the user's ban is logged
-  const logged = !!(db.prepare(`SELECT count(*) FROM robloxbans WHERE robloxID = '${robloxData.data[0].id}'`).get()["count(*)"] > 0);
+  const logged = !!(db.prepare(`SELECT count(*) FROM robloxbans WHERE robloxID = '${robloxData.Id}'`).get()["count(*)"] > 0);
   
   // Actions that require user argument
   switch (action.toLowerCase()) {
@@ -62,7 +55,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
     case "remove": {
       // End command if there are no bans logged for the specified user
       if (!logged) return message.reply("There is no ban logged for the user you specified.");
-      db.prepare(`DELETE FROM robloxbans WHERE robloxID = '${robloxData.data[0].id}'`).run();
+      db.prepare(`DELETE FROM robloxbans WHERE robloxID = '${robloxData.Id}'`).run();
       message.reply("Successfully removed the ban from logs.")
       return;
     }
@@ -70,8 +63,8 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
     // View a logged ban
     case "check" || "view": {
       // End command if there are no bans logged for the specified user
-      if (!logged) return message.reply(`There is no ban logged for the user you specified. Try searching R-GMC for their ID: \`${robloxData.data[0].id}\`.`);
-      const logs = db.prepare(`SELECT * FROM robloxbans WHERE robloxID = '${robloxData.data[0].id}'`).get(); // Load the ban for the desired user
+      if (!logged) return message.reply(`There is no ban logged for the user you specified. Try searching R-GMC for their ID: \`${robloxData.Id}\`.`);
+      const logs = db.prepare(`SELECT * FROM robloxbans WHERE robloxID = '${robloxData.Id}'`).get(); // Load the ban for the desired user
       const footer = logs.unban ? `Roblox ID: ${logs.robloxID} • Reminder set for: ` : `Roblox ID: ${logs.robloxID} • No reminder set`; // Create footer string
       let moderator = logs.moderator === "668335554710077446" ? "Autoban" : await client.users.fetch(logs.moderator).catch(() => moderator = logs.moderator); // Decide whether to display the user object or just the ID (or "Autoban")
       const loggedReason = logs.reason ? logs.reason : "None"; // Reason variable
@@ -88,11 +81,11 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
     }
       
     case "count": {
-      const entry = db.prepare(`SELECT * FROM bancount WHERE robloxID = '${robloxData.data[0].id}'`).get();
+      const entry = db.prepare(`SELECT * FROM bancount WHERE robloxID = '${robloxData.Id}'`).get();
       const count = !!entry ? entry.count : 0;
       var embed = new Discord.MessageEmbed()
         .setColor("6600ff")
-        .setAuthor(user,`https://www.roblox.com/bust-thumbnail/image?userId=${robloxData.data[0].id}&width=420&height=420&format=png`,`https://www.roblox.com/users/${robloxData.data[0].id}/profile`)
+        .setAuthor(user,`https://www.roblox.com/bust-thumbnail/image?userId=${robloxData.Id}&width=420&height=420&format=png`,`https://www.roblox.com/users/${robloxData.Id}/profile`)
         .addField("Total Number of In-Game Bans:", count);
       if (count > 0) embed.addField("Latest Ban:", client.toUTC(entry.latest));
       message.channel.send(embed);
@@ -112,11 +105,11 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       if (logged) return message.reply("There is already a ban logged for that user! Try using the `edit` aciton instead.");
       const unban = client.parseTime(message.flags["time"]); // Amount of time to wait before sending unban reminder (added to Date.now() when inserted into the database)
       // Add database entry
-      const info = db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)").run(JSON.stringify(robloxData.data[0].id), user, message.author.id, reason, Date.now(), !!unban ? unban + Date.now() : unban, 0);
+      const info = db.prepare("INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)").run(JSON.stringify(robloxData.Id), user, message.author.id, reason, Date.now(), !!unban ? unban + Date.now() : unban, 0);
       // Add 1 to ban count
-      const count = db.prepare(`SELECT count FROM bancount WHERE robloxID = '${robloxData.data[0].id}'`).get();
-      if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${robloxData.data[0].id}'`).run(count.count + 1, Date.now());
-      else db.prepare(`INSERT INTO bancount (robloxID, count, latest) VALUES (?, ?, ?)`).run(JSON.stringify(robloxData.data[0].id), 1, Date.now());
+      const count = db.prepare(`SELECT count FROM bancount WHERE robloxID = '${robloxData.Id}'`).get();
+      if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${robloxData.Id}'`).run(count.count + 1, Date.now());
+      else db.prepare(`INSERT INTO bancount (robloxID, count, latest) VALUES (?, ?, ?)`).run(JSON.stringify(robloxData.Id), 1, Date.now());
       
       if (!!unban) {
         // Set unban reminder timeout
@@ -138,7 +131,7 @@ exports.run = async (client, message, [action, user, ...reason], level) => {
       // End command if there are no bans logged for the specified user
       if (!logged) return message.reply("There is no ban logged for the user you specified.");
       // Grab the current log
-      const oldLog = db.prepare(`SELECT * FROM robloxbans WHERE robloxID = '${robloxData.data[0].id}'`).get();
+      const oldLog = db.prepare(`SELECT * FROM robloxbans WHERE robloxID = '${robloxData.Id}'`).get();
       // End command if no updateable fields are being updated
       if (!message.flags["reason"] && !message.flags["time"]) return message.reply("You did not supply any field update information!");
       // Set new reason value or keep it the same

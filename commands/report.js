@@ -5,13 +5,13 @@ exports.run = async (client, message, args, level) => {
     // Make sure a user is specified
     if (!args[0]) return message.reply("You need to include the username of the person you are trying to report .-.")
     // Request roblox data for the specified username
-    var response = await fetch("https://users.roblox.com/v1/usernames/users", {body:JSON.stringify({"usernames":[args[0]],"excludeBannedUsers":false}), method:"post", headers:{"Content-Type":"application/json"}}).then(res=>res.json());
+    var response = await fetch(`https://api.roblox.com/users/get-by-username?username=${encodeURI(args[0])}`).then(res=>res.json());
     
     // End command if specified user is not a valid roblox username
-    if (!response.data[0]) return message.reply("Could not find a roblox user with that username. Please try again.");
+    if (response.success && response.success === false && response.errorMessage) return message.reply(`Error: \`${response.errorMessage}\`. Please try again.`);
     
     // End command if specified user is already banned
-    const banned = db.prepare(`SELECT COUNT(*) FROM robloxbans WHERE robloxID = '${response.data[0].id}'`).get();
+    const banned = db.prepare(`SELECT COUNT(*) FROM robloxbans WHERE robloxID = '${response.Id}'`).get();
     if (banned["COUNT(*)"] > 0) return (message.reply("That user is already banned."));
   
     // Open DM channel with user
