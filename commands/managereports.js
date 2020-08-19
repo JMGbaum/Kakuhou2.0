@@ -146,10 +146,10 @@ exports.run = async (client, message, args, level) => {
                     collector.stop("you took too long to respond.");
                     return;
                 };
-                // Delete all reports of the user from the database
-                db.prepare(`DELETE FROM reports WHERE robloxID = '${row.robloxID}'`).run();
                 // Add to rbans database
                 const info = db.prepare(`INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)`).run([row.robloxID, row.reportedUsername, user.id, row.reason, Date.now(), unban, 0]);
+                // Delete all reports of the user from the database
+                db.prepare(`DELETE FROM reports WHERE robloxID = '${row.robloxID}'`).run();
                 // Remove all reports of the user from the loaded reports
                 reports = reports.filter(r => r.robloxID !== row.robloxID);
                 // Add 1 to ban count
@@ -157,7 +157,7 @@ exports.run = async (client, message, args, level) => {
                 if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${row.robloxID}'`).run(count.count + 1, Date.now());
                 else db.prepare(`INSERT INTO bancount (robloxID, count, latest) VALUES (?, ?, ?)`).run(JSON.stringify(row.robloxID), 1, Date.now());
                 // Send confirmation message
-                message.reply("Report successfully logged in rbans.").then(m => m.delete({timeout: 5000}));
+                message.reply(`Report successfully logged in rbans. Don't forget to say \`!Ban ${row.reportedUsername}\` in-game!`).then(m => m.delete({timeout: 10000}));
                 // Set unban timeout
                 if (unban !== null) {
                     client.rbanReminders[info.lastInsertRowid] = new CronJob(new Date(unban), () => {
@@ -167,6 +167,20 @@ exports.run = async (client, message, args, level) => {
                     // Start the cron job
                     client.rbanReminders[info.lastInsertRowid].start();
                 };
+                
+                // Add to log channel
+                const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
+                if (logChannel) {
+                  const logEmbed = new Discord.MessageEmbed()
+                    .setTitle("New Ro-Ghoul Ban Log")
+                    .setAuthor(row.updatedUsername, `https://www.roblox.com/bust-thumbnail/image?userId=${row.robloxID}&width=420&height=420&format=png`, `https://www.roblox.com/users/${row.robloxID}/profile`)
+                    .setColor("FF88BB")
+                    .addField("Moderator:", message.author)
+                    .setFooter(`Roblox ID: ${row.robloxID}`)
+                    .setTimestamp();
+                  if (unban !== null) logEmbed.addField("Reminder Set For:", client.toUTC(unban));
+                  logChannel.send(logEmbed);
+                }
                 break;
             }
 
@@ -230,10 +244,10 @@ exports.run = async (client, message, args, level) => {
                 unbanResponse.delete();
                 unbanPrompt.delete();
               
-                // Delete all reports of the user from database
-                db.prepare(`DELETE FROM reports WHERE robloxID = '${row.robloxID}'`).run();
                 // Log in rbans
                 const info = db.prepare(`INSERT INTO robloxbans (robloxID, username, moderator, reason, time, unban, reminderSent) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(row.robloxID, row.reportedUsername, user.id, reason, Date.now(), unban, 0);
+                // Delete all reports of the user from database
+                db.prepare(`DELETE FROM reports WHERE robloxID = '${row.robloxID}'`).run();
                 // Remove all reports of the user from the loaded reports
                 reports = reports.filter(r => r.robloxID !== row.robloxID);
                 // Add 1 to ban count
@@ -241,7 +255,7 @@ exports.run = async (client, message, args, level) => {
                 if (!!count) db.prepare(`UPDATE bancount SET count = ?, latest = ? WHERE robloxID = '${row.robloxID}'`).run(count.count + 1, Date.now());
                 else db.prepare(`INSERT INTO bancount (robloxID, count, latest) VALUES (?, ?, ?)`).run(row.robloxID, 1, Date.now());
                 // Send confirmation message
-                message.reply("Report successfully logged in rbans.").then(m => m.delete({timeout: 5000}));
+                message.reply(`Report successfully logged in rbans. Don't forget to say \`!Ban ${row.reportedUsername}\` in-game!`).then(m => m.delete({timeout: 10000}));
                 // Set unban timeout
                 if (unban !== null) {
                     client.rbanReminders[info.lastInsertRowid] = new CronJob(new Date(unban), () => {
@@ -251,6 +265,20 @@ exports.run = async (client, message, args, level) => {
                     // Start the cron job
                     client.rbanReminders[info.lastInsertRowid].start();
                 };
+              
+                // Add to log channel
+                const logChannel = message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase());
+                if (logChannel) {
+                  const logEmbed = new Discord.MessageEmbed()
+                    .setTitle("New Ro-Ghoul Ban Log")
+                    .setAuthor(row.updatedUsername, `https://www.roblox.com/bust-thumbnail/image?userId=${row.robloxID}&width=420&height=420&format=png`, `https://www.roblox.com/users/${row.robloxID}/profile`)
+                    .setColor("FF88BB")
+                    .addField("Moderator:", message.author)
+                    .setFooter(`Roblox ID: ${row.robloxID}`)
+                    .setTimestamp();
+                  if (unban !== null) logEmbed.addField("Reminder Set For:", client.toUTC(unban));
+                  logChannel.send(logEmbed);
+                }
                 break;
             }
 
@@ -272,13 +300,14 @@ exports.run = async (client, message, args, level) => {
             }
 
             case "🛑": {
+                if (!!row) client.activeReports.splice(client.activeReports.indexOf(row.robloxID), 1);
                 collector.stop("you reacted with 🛑.");
                 return;
             }
         };
 
         // Remove the current report from active reports
-        if (!!row) client.activeReports.splice(client.activeReports.indexOf(row.reportID), 1);
+        if (!!row) client.activeReports.splice(client.activeReports.indexOf(row.robloxID), 1);
         
         if (index !== -1) {
             let validReport = false;
@@ -292,24 +321,24 @@ exports.run = async (client, message, args, level) => {
                 }
 
                 // Load game bans
-                banned = db.prepare(`SELECT COUNT(*) FROM robloxbans WHERE robloxID = '${row.robloxID}'`).all();
+                banned = db.prepare(`SELECT COUNT(*) FROM robloxbans WHERE robloxID = '${row.robloxID}'`).get();
                 // Delete all reports of the user if they are already banned, then move to the next iteration.
                 if (banned["COUNT(*)"] > 0) {
-                    db.prepare(`DELETE FROM reports WHERE robloxID = "${row.robloxID}"`).run();
-                    if (reaction.emoji.name === "⏩") index++
+                    db.prepare(`DELETE FROM reports WHERE robloxID = '${row.robloxID}'`).run();
+                    if (["⏩", "✅", "⚠️", "❌", "🔄"].some(r => reaction.emoji.name === r)) index++
                     else if (reaction.emoji.name === "⏪") index -= 1
                     else collector.stop("the report you tried to load is for a user that is already banned.");
                 }
                 // Skip the report if it is already active
-                else if (client.activeReports.includes(row.reportID)) {
-                    if (reaction.emoji.name === "⏩") index++
+                else if (client.activeReports.includes(row.robloxID)) {
+                    if (["⏩", "✅", "⚠️", "❌", "🔄"].some(r => reaction.emoji.name === r)) index++
                     else if (reaction.emoji.name === "⏪") index -= 1
                     else collector.stop("the report you tried to load is currently being resolved by someone else.");
                 } else {
                     // if there are no game bans and the report is not already being handled, load the report
                     validReport = true;
                     // Add the current report to the active reports
-                    client.activeReports.push(row.reportID);
+                    client.activeReports.push(row.robloxID);
 
                     let reporter = await client.users.fetch(row.reporterID);
                     // Create a new embed, set the color, and load report data
@@ -342,6 +371,8 @@ exports.run = async (client, message, args, level) => {
         } else if (reason !== "limit") {
             sentMessage.edit(`${user}, command terminated: ${reason}`, { embed: null });
         };
+        // Delete row from open reports
+        if (row && client.activeReports.includes(row.robloxID)) client.activeReports.splice(client.activeReports.indexOf(row.robloxID), 1);
         try { sentMessage.reactions.removeAll() } catch (err) { console.log(err.stack) };
     });
 

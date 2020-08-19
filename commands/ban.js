@@ -14,7 +14,7 @@ exports.run = async (client, message, args, level) => {
   let ban = await (async () => {
     try { return await message.guild.fetchBan(member.id) } catch (err) { return false };
   }).call();
-  const time = client.parseTime(message.flags["time"]);
+  const time = client.parseTime(message.flags["time"] || message.flags["t"]);
 
   // Return if member is already banned
   if (!!ban) return message.reply("That user is already banned!");
@@ -33,9 +33,9 @@ exports.run = async (client, message, args, level) => {
 
   if (!!time) {
     banEmbed.addField("Length:", client.parseTimeMessage(time)).addField("Reason:", args.slice(1).join(" "));
-    try {
+    /*try {
       member.send("You were temporarily banned for " + client.parseTimeMessage(time) + "\n\nReason:\n*" + args.slice(1).join(" ") + "*").catch(err => {});
-    } catch (err) {} 
+    } catch (err) {} */
     // Remove all other tempbans
     db.prepare(`DELETE FROM tempbans WHERE userID = '${member.id}' AND guildID = '${message.guild.id}'`).run();
     // Remove timeout
@@ -64,7 +64,7 @@ exports.run = async (client, message, args, level) => {
   else banEmbed.addField("Length:", "Indefinitely").addField("Reason:", args.slice(1).join(" "));
   message.guild.members.ban(member.id, {
     reason: args.slice(1).join(" "),
-    days: message.flags["delete"] && parseInt(message.flags["delete"]) && parseInt(message.flags["delete"]) <= 7 && parseInt(message.flags["delete"]) >= 0 ? parseInt(message.flags["delete"]) : 0
+    days: parseInt(message.flags["delete"] || message.flags["del"]) <= 7 && parseInt(message.flags["delete"] || message.flags["del"]) >= 0 ? parseInt(message.flags["delete"] || message.flags["del"]) : 0
   });
   banEmbed.setTimestamp();
   message.guild.channels.cache.find(c => c.name.toLowerCase() === message.settings.modLogChannel.toLowerCase()).send(banEmbed);
